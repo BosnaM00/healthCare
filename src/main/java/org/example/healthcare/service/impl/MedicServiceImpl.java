@@ -8,9 +8,11 @@ import org.example.healthcare.dto.medic.MedicResponse;
 import org.example.healthcare.dto.medic.MedicSearchRequest;
 import org.example.healthcare.dto.medic.MedicVerificationRequest;
 import org.example.healthcare.dto.specialty.SpecialtyResponse;
+import org.example.healthcare.model.Clinic;
 import org.example.healthcare.model.Medic;
 import org.example.healthcare.model.Specialty;
 import org.example.healthcare.model.User;
+import org.example.healthcare.repository.ClinicRepository;
 import org.example.healthcare.repository.MedicRepository;
 import org.example.healthcare.repository.SpecialtyRepository;
 import org.example.healthcare.repository.UserRepository;
@@ -32,6 +34,7 @@ public class MedicServiceImpl implements MedicService {
     private final MedicRepository medicRepository;
     private final UserRepository userRepository;
     private final SpecialtyRepository specialtyRepository;
+    private final ClinicRepository clinicRepository;
 
     @Override
     @Transactional
@@ -46,7 +49,7 @@ public class MedicServiceImpl implements MedicService {
 
         Medic medic = Medic.builder()
                 .user(user)
-                .clinicId(request.clinicId())
+                .clinic(resolveClinic(request.clinicId()))
                 .licenseNumber(request.licenseNumber())
                 .licenseExpiresAt(request.licenseExpiresAt())
                 .availableForInstant(request.availableForInstant())
@@ -72,7 +75,7 @@ public class MedicServiceImpl implements MedicService {
     public MedicResponse updateProfile(UUID userId, MedicRequest request) {
         Medic medic = medicRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medic profile not found for user: " + userId));
-        medic.setClinicId(request.clinicId());
+        medic.setClinic(resolveClinic(request.clinicId()));
         medic.setLicenseNumber(request.licenseNumber());
         medic.setLicenseExpiresAt(request.licenseExpiresAt());
         medic.setAvailableForInstant(request.availableForInstant());
@@ -112,6 +115,15 @@ public class MedicServiceImpl implements MedicService {
         return toResponse(medic);
     }
 
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    /** Returns null for independent practitioners; throws if the ID is non-null but not found. */
+    private Clinic resolveClinic(UUID clinicId) {
+        if (clinicId == null) return null;
+        return clinicRepository.findById(clinicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinic", clinicId));
+    }
+
     private void attachSpecialties(Medic medic, List<UUID> specialtyIds) {
         medic.getMedicSpecialties().clear();
         List<Specialty> specialties = specialtyRepository.findAllById(specialtyIds);
@@ -135,7 +147,7 @@ public class MedicServiceImpl implements MedicService {
         return new MedicResponse(
                 medic.getId(),
                 medic.getUser().getId(),
-                medic.getClinicId(),
+                medic.getClinic() != null ? medic.getClinic().getId() : null,
                 medic.getLicenseNumber(),
                 medic.getLicenseExpiresAt(),
                 medic.getVerificationStatus(),

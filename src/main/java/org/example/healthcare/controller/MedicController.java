@@ -6,11 +6,13 @@ import org.example.healthcare.dto.medic.MedicRequest;
 import org.example.healthcare.dto.medic.MedicResponse;
 import org.example.healthcare.dto.medic.MedicSearchRequest;
 import org.example.healthcare.dto.medic.MedicVerificationRequest;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.MedicService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,10 +31,10 @@ public class MedicController {
      */
     @PostMapping
     public ResponseEntity<MedicResponse> createProfile(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @Valid @RequestBody MedicRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(medicService.createProfile(userId, request));
+                .body(medicService.createProfile(principal.getUserId(), request));
     }
 
     /**
@@ -40,8 +42,8 @@ public class MedicController {
      * Get the authenticated medic's own full profile (MEDIC).
      */
     @GetMapping("/me")
-    public ResponseEntity<MedicResponse> getMe(@RequestHeader("X-User-Id") UUID userId) {
-        return ResponseEntity.ok(medicService.getByUserId(userId));
+    public ResponseEntity<MedicResponse> getMe(@AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(medicService.getByUserId(principal.getUserId()));
     }
 
     /**
@@ -50,9 +52,9 @@ public class MedicController {
      */
     @PutMapping("/me")
     public ResponseEntity<MedicResponse> updateMe(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @Valid @RequestBody MedicRequest request) {
-        return ResponseEntity.ok(medicService.updateProfile(userId, request));
+        return ResponseEntity.ok(medicService.updateProfile(principal.getUserId(), request));
     }
 
     /**
@@ -61,9 +63,9 @@ public class MedicController {
      */
     @PutMapping("/me/specialties")
     public ResponseEntity<MedicResponse> updateSpecialties(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @RequestBody List<UUID> specialtyIds) {
-        MedicResponse profile = medicService.getByUserId(userId);
+        MedicResponse profile = medicService.getByUserId(principal.getUserId());
         return ResponseEntity.ok(medicService.updateSpecialties(profile.id(), specialtyIds));
     }
 

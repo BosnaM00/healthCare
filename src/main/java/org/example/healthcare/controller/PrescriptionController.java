@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.prescription.PrescriptionRequest;
 import org.example.healthcare.dto.prescription.PrescriptionResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.PrescriptionService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -28,15 +30,15 @@ public class PrescriptionController {
     @PostMapping("/consultation/{consultationId}")
     @ResponseStatus(HttpStatus.CREATED)
     public PrescriptionResponse create(@PathVariable UUID consultationId,
-                                       @RequestParam UUID medicUserId,
+                                       @AuthenticationPrincipal AppUserDetails principal,
                                        @Valid @RequestBody PrescriptionRequest request) {
-        return prescriptionService.create(consultationId, medicUserId, request);
+        return prescriptionService.create(consultationId, principal.getUserId(), request);
     }
 
     /** AUTH — retrieve decrypted prescription */
     @GetMapping("/consultation/{consultationId}")
     public PrescriptionResponse getByConsultationId(@PathVariable UUID consultationId,
-                                                    @RequestParam UUID principalId) {
-        return prescriptionService.getByConsultationId(consultationId, principalId);
+                                                    @AuthenticationPrincipal AppUserDetails principal) {
+        return prescriptionService.getByConsultationId(consultationId, principal.getUserId());
     }
 }

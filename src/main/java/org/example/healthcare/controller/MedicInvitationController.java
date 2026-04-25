@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.invitation.MedicInvitationRequest;
 import org.example.healthcare.dto.invitation.MedicInvitationResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.MedicInvitationService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,11 +52,11 @@ public class MedicInvitationController {
 
     /**
      * MEDIC — accept an invitation using the email token.
-     * Called during or after medic registration.
+     * The medic ID is taken from the authenticated principal, not from the request.
      */
     @PutMapping("/api/v1/invitations/accept")
     public MedicInvitationResponse accept(@RequestParam String token,
-                                          @RequestParam UUID medicId) {
-        return invitationService.accept(token, medicId);
+                                          @AuthenticationPrincipal AppUserDetails principal) {
+        return invitationService.accept(token, principal.getUserId());
     }
 }

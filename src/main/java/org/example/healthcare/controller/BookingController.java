@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.booking.BookingRequest;
 import org.example.healthcare.dto.booking.BookingResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.BookingService;
 import org.example.healthcare.service.MedicService;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,10 +31,10 @@ public class BookingController {
      */
     @PostMapping
     public ResponseEntity<BookingResponse> create(
-            @RequestHeader("X-User-Id") UUID patientId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @Valid @RequestBody BookingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(bookingService.create(patientId, request));
+                .body(bookingService.create(principal.getUserId(), request));
     }
 
     /**
@@ -42,8 +44,8 @@ public class BookingController {
     @GetMapping("/{id}")
     public ResponseEntity<BookingResponse> getById(
             @PathVariable UUID id,
-            @RequestHeader("X-User-Id") UUID principalId) {
-        return ResponseEntity.ok(bookingService.getById(id, principalId));
+            @AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(bookingService.getById(id, principal.getUserId()));
     }
 
     /**
@@ -52,12 +54,12 @@ public class BookingController {
      */
     @GetMapping("/my")
     public ResponseEntity<Page<BookingResponse>> getMyBookings(
-            @RequestHeader("X-User-Id") UUID patientId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(
                 bookingService.getPatientBookings(
-                        patientId, PageRequest.of(page, size, Sort.by("createdAt").descending())));
+                        principal.getUserId(), PageRequest.of(page, size, Sort.by("createdAt").descending())));
     }
 
     /**
@@ -67,8 +69,8 @@ public class BookingController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(
             @PathVariable UUID id,
-            @RequestHeader("X-User-Id") UUID patientId) {
-        bookingService.cancel(id, patientId);
+            @AuthenticationPrincipal AppUserDetails principal) {
+        bookingService.cancel(id, principal.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -78,10 +80,10 @@ public class BookingController {
      */
     @GetMapping("/medic")
     public ResponseEntity<Page<BookingResponse>> getMedicBookings(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(
                 bookingService.getMedicBookings(
                         medicId, PageRequest.of(page, size, Sort.by("createdAt").descending())));

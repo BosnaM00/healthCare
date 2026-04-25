@@ -10,6 +10,7 @@ import org.example.healthcare.model.User;
 import org.example.healthcare.model.UserStatus;
 import org.example.healthcare.repository.UserRepository;
 import org.example.healthcare.service.UserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -30,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
         User user = User.builder()
                 .email(request.email())
-                .passwordHash(request.passwordHash())
+                .passwordHash(passwordEncoder.encode(request.password()))
                 .role(request.role())
                 .status(UserStatus.PENDING_VERIFICATION)
                 .stripeCustomerId(request.stripeCustomerId())
@@ -54,7 +56,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateProfile(UUID id, UserRequest request) {
         User user = findOrThrow(id);
         user.setEmail(request.email());
-        user.setPasswordHash(request.passwordHash());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setStripeCustomerId(request.stripeCustomerId());
         return toResponse(user);
     }

@@ -16,4 +16,6 @@ public interface MedicSpecialtyRepository extends JpaRepository<MedicSpecialty, 
     List<MedicSpecialty> findBySpecialtyId(UUID specialtyId);
 
     boolean existsByMedicIdAndSpecialtyId(UUID medicId, UUID specialtyId);
+
+    boolean existsBySpecialtyId(UUID specialtyId);
 }

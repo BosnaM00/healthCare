@@ -4,10 +4,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.consultation.ConsultationNotesRequest;
 import org.example.healthcare.dto.consultation.ConsultationResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.ConsultationService;
+import org.example.healthcare.service.MedicService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -26,21 +29,22 @@ import java.util.UUID;
 public class ConsultationController {
 
     private final ConsultationService consultationService;
+    private final MedicService medicService;
 
     /** MEDIC — open video room; transitions booking → IN_PROGRESS */
     @PostMapping("/start")
     @ResponseStatus(HttpStatus.CREATED)
     public ConsultationResponse start(@RequestParam UUID bookingId,
-                                      @RequestParam UUID medicUserId) {
-        return consultationService.start(bookingId, medicUserId);
+                                      @AuthenticationPrincipal AppUserDetails principal) {
+        return consultationService.start(bookingId, principal.getUserId());
     }
 
     /** MEDIC — close room; records duration; sets release_at */
     @PostMapping("/{id}/complete")
     public ConsultationResponse complete(@PathVariable UUID id,
-                                         @RequestParam UUID medicUserId,
+                                         @AuthenticationPrincipal AppUserDetails principal,
                                          @RequestParam int durationSeconds) {
-        return consultationService.complete(id, medicUserId, durationSeconds);
+        return consultationService.complete(id, principal.getUserId(), durationSeconds);
     }
 
     /** ADMIN / system — mark no-show or technical failure */
@@ -52,29 +56,30 @@ public class ConsultationController {
     /** AUTH — get consultation details; decrypted notes returned only to medic */
     @GetMapping("/{id}")
     public ConsultationResponse getById(@PathVariable UUID id,
-                                        @RequestParam UUID principalId) {
-        return consultationService.getById(id, principalId);
+                                        @AuthenticationPrincipal AppUserDetails principal) {
+        return consultationService.getById(id, principal.getUserId());
     }
 
     /** PATIENT — paginated consultation history */
     @GetMapping("/my/patient")
-    public Page<ConsultationResponse> getPatientHistory(@RequestParam UUID patientId,
+    public Page<ConsultationResponse> getPatientHistory(@AuthenticationPrincipal AppUserDetails principal,
                                                         Pageable pageable) {
-        return consultationService.getPatientHistory(patientId, pageable);
+        return consultationService.getPatientHistory(principal.getUserId(), pageable);
     }
 
-    /** MEDIC — paginated consultation history */
+    /** MEDIC — paginated consultation history by medic entity ID */
     @GetMapping("/my/medic")
-    public Page<ConsultationResponse> getMedicHistory(@RequestParam UUID medicId,
+    public Page<ConsultationResponse> getMedicHistory(@AuthenticationPrincipal AppUserDetails principal,
                                                       Pageable pageable) {
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return consultationService.getMedicHistory(medicId, pageable);
     }
 
     /** MEDIC — save / update encrypted consultation notes */
     @PutMapping("/{id}/notes")
     public ConsultationResponse saveNotes(@PathVariable UUID id,
-                                          @RequestParam UUID medicUserId,
+                                          @AuthenticationPrincipal AppUserDetails principal,
                                           @Valid @RequestBody ConsultationNotesRequest request) {
-        return consultationService.saveNotes(id, medicUserId, request);
+        return consultationService.saveNotes(id, principal.getUserId(), request);
     }
 }

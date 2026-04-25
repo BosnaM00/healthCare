@@ -7,7 +7,7 @@ import org.example.healthcare.model.UserRole;
 
 public record UserRequest(
         @Email @NotBlank String email,
-        @NotBlank String passwordHash,
+        @NotBlank String password,
         @NotNull UserRole role,
         String stripeCustomerId   // nullable — patients only
 ) {}

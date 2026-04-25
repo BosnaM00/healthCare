@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.user.UserRequest;
 import org.example.healthcare.dto.user.UserResponse;
 import org.example.healthcare.dto.user.UserStatusRequest;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -31,11 +33,10 @@ public class UserController {
     /**
      * GET /api/v1/users/me
      * Get current authenticated user's profile (AUTH).
-     * principalId is resolved from the JWT in a real implementation.
      */
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getMe(@RequestHeader("X-User-Id") UUID principalId) {
-        return ResponseEntity.ok(userService.getCurrentUser(principalId));
+    public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(userService.getCurrentUser(principal.getUserId()));
     }
 
     /**
@@ -44,9 +45,9 @@ public class UserController {
      */
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMe(
-            @RequestHeader("X-User-Id") UUID principalId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @Valid @RequestBody UserRequest request) {
-        return ResponseEntity.ok(userService.updateProfile(principalId, request));
+        return ResponseEntity.ok(userService.updateProfile(principal.getUserId(), request));
     }
 
     /**

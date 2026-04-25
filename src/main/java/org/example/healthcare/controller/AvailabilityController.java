@@ -4,10 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.availability.AvailabilityRequest;
 import org.example.healthcare.dto.availability.AvailabilityResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.AvailabilityService;
 import org.example.healthcare.service.MedicService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,8 +28,8 @@ public class AvailabilityController {
      */
     @GetMapping("/api/v1/medics/me/availabilities")
     public ResponseEntity<List<AvailabilityResponse>> getMyAvailabilities(
-            @RequestHeader("X-User-Id") UUID userId) {
-        UUID medicId = medicService.getByUserId(userId).id();
+            @AuthenticationPrincipal AppUserDetails principal) {
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(availabilityService.getByMedic(medicId));
     }
 
@@ -37,9 +39,9 @@ public class AvailabilityController {
      */
     @PostMapping("/api/v1/medics/me/availabilities")
     public ResponseEntity<AvailabilityResponse> create(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @Valid @RequestBody AvailabilityRequest request) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(availabilityService.create(medicId, request));
     }
@@ -50,10 +52,10 @@ public class AvailabilityController {
      */
     @PutMapping("/api/v1/medics/me/availabilities/{id}")
     public ResponseEntity<AvailabilityResponse> update(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @PathVariable UUID id,
             @Valid @RequestBody AvailabilityRequest request) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(availabilityService.update(medicId, id, request));
     }
 
@@ -63,9 +65,9 @@ public class AvailabilityController {
      */
     @DeleteMapping("/api/v1/medics/me/availabilities/{id}")
     public ResponseEntity<Void> delete(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @PathVariable UUID id) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         availabilityService.delete(medicId, id);
         return ResponseEntity.noContent().build();
     }

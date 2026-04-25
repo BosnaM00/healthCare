@@ -2,9 +2,12 @@ package org.example.healthcare.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.payment.PaymentResponse;
+import org.example.healthcare.security.AppUserDetails;
+import org.example.healthcare.service.MedicService;
 import org.example.healthcare.service.PaymentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -27,22 +30,24 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final MedicService medicService;
 
     @GetMapping("/booking/{bookingId}")
     public PaymentResponse getByBookingId(@PathVariable UUID bookingId,
-                                          @RequestParam UUID principalId) {
-        return paymentService.getByBookingId(bookingId, principalId);
+                                          @AuthenticationPrincipal AppUserDetails principal) {
+        return paymentService.getByBookingId(bookingId, principal.getUserId());
     }
 
     @GetMapping("/my/patient")
-    public Page<PaymentResponse> getPatientPayments(@RequestParam UUID patientId,
+    public Page<PaymentResponse> getPatientPayments(@AuthenticationPrincipal AppUserDetails principal,
                                                     Pageable pageable) {
-        return paymentService.getPatientPayments(patientId, pageable);
+        return paymentService.getPatientPayments(principal.getUserId(), pageable);
     }
 
     @GetMapping("/my/medic")
-    public Page<PaymentResponse> getMedicPayments(@RequestParam UUID medicId,
+    public Page<PaymentResponse> getMedicPayments(@AuthenticationPrincipal AppUserDetails principal,
                                                   Pageable pageable) {
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return paymentService.getMedicPayments(medicId, pageable);
     }
 }

@@ -2,10 +2,12 @@ package org.example.healthcare.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.healthcare.dto.slot.SlotResponse;
+import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.MedicService;
 import org.example.healthcare.service.SlotService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -37,10 +39,10 @@ public class SlotController {
      */
     @GetMapping("/api/v1/medics/me/slots")
     public ResponseEntity<List<SlotResponse>> getMySlots(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(slotService.getMedicOwnSlots(medicId, from, to));
     }
 
@@ -50,9 +52,9 @@ public class SlotController {
      */
     @PatchMapping("/api/v1/medics/me/slots/{slotId}/block")
     public ResponseEntity<SlotResponse> blockSlot(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @PathVariable UUID slotId) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(slotService.blockSlot(medicId, slotId));
     }
 
@@ -62,9 +64,9 @@ public class SlotController {
      */
     @PatchMapping("/api/v1/medics/me/slots/{slotId}/unblock")
     public ResponseEntity<SlotResponse> unblockSlot(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal AppUserDetails principal,
             @PathVariable UUID slotId) {
-        UUID medicId = medicService.getByUserId(userId).id();
+        UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return ResponseEntity.ok(slotService.unblockSlot(medicId, slotId));
     }
 }
