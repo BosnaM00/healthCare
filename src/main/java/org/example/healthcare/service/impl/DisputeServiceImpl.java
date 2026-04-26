@@ -1,6 +1,8 @@
 package org.example.healthcare.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.healthcare.common.StripePaymentService;
 import org.example.healthcare.common.exception.BusinessException;
 import org.example.healthcare.common.exception.ResourceNotFoundException;
 import org.example.healthcare.dto.dispute.DisputeRequest;
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,6 +35,7 @@ public class DisputeServiceImpl implements DisputeService {
     private final PaymentRepository      paymentRepository;
     private final UserRepository         userRepository;
     private final PaymentService         paymentService;
+    private final StripePaymentService   stripePaymentService;
 
     @Override
     @Transactional
@@ -113,7 +117,17 @@ public class DisputeServiceImpl implements DisputeService {
 
         switch (request.resolution()) {
             case RESOLVED_RELEASED -> paymentService.release(payment.getId());
-            case RESOLVED_REFUNDED -> paymentService.refund(payment.getId(), null);
+            case RESOLVED_REFUNDED -> {
+                // If funds were already released, reverse the transfer first then refund
+                if (payment.getStatus() == PaymentStatus.RELEASED
+                        && payment.getStripeTransferId() != null) {
+                    log.info("Reversing transfer {} before refund for payment {}",
+                            payment.getStripeTransferId(), payment.getId());
+                    stripePaymentService.reverseTransfer(
+                            payment.getStripeTransferId(), payment.getId().toString());
+                }
+                paymentService.refund(payment.getId(), null);
+            }
             case RESOLVED_PARTIAL  -> {
                 // Partial: release half to medic, refund other half
                 // TODO: accept split amounts in DisputeResolutionRequest for production

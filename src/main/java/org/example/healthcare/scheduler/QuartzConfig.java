@@ -5,35 +5,46 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Quartz trigger configuration for Phase 2 scheduled jobs.
+ * Quartz trigger configuration for MediConnect scheduled jobs.
  *
- * <p>JobDetail beans use {@code storeDurably(true)} so they survive application restarts.
- * In development the in-memory RAMJobStore is used (no quartz.properties needed).
- * For production clustering, add a {@code quartz.properties} with JDBC JobStoreTX.
+ * <p>Job persistence: all jobs use {@code storeDurably(true)} so they survive restarts.
+ * The JDBC JobStoreTX (PostgreSQL) is configured in {@code application.properties} and
+ * the schema is initialised by Flyway migration V2.
+ *
+ * <p>Jobs:
+ * <ul>
+ *   <li>{@link AutoReleaseConsultationJob} — scans for HELD payments whose
+ *       consultation.release_at has passed and releases them to the medic.</li>
+ *   <li>{@link InvitationExpiryJob} — expires stale clinic invitations (daily).</li>
+ * </ul>
  */
 @Configuration
 public class QuartzConfig {
 
-    // ── PaymentReleaseJob ─────────────────────────────────────────────────────
+    // ── AutoReleaseConsultationJob ────────────────────────────────────────────
 
     @Bean
-    public JobDetail paymentReleaseJobDetail() {
-        return JobBuilder.newJob(PaymentReleaseJob.class)
-                .withIdentity("paymentReleaseJob")
+    public JobDetail autoReleaseJobDetail() {
+        return JobBuilder.newJob(AutoReleaseConsultationJob.class)
+                .withIdentity("autoReleaseConsultationJob", "payments")
+                .withDescription("Releases HELD payments after the 120-minute dispute window")
                 .storeDurably()
                 .build();
     }
 
     /**
-     * Runs every 15 minutes.
-     * Fine-grained enough to minimise payout delay without hammering the DB.
+     * Runs every 5 minutes to minimise payout delay without hammering the DB.
+     * Misfire policy: MISFIRE_INSTRUCTION_FIRE_NOW so a missed fire executes immediately
+     * after a restart (required by the plan document).
      */
     @Bean
-    public Trigger paymentReleaseTrigger(JobDetail paymentReleaseJobDetail) {
+    public Trigger autoReleaseTrigger(JobDetail autoReleaseJobDetail) {
         return TriggerBuilder.newTrigger()
-                .forJob(paymentReleaseJobDetail)
-                .withIdentity("paymentReleaseTrigger")
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/15 * * * ?"))
+                .forJob(autoReleaseJobDetail)
+                .withIdentity("autoReleaseTrigger", "payments")
+                .withSchedule(CronScheduleBuilder
+                        .cronSchedule("0 0/5 * * * ?")
+                        .withMisfireHandlingInstructionFireAndProceed())
                 .build();
     }
 
@@ -42,17 +53,17 @@ public class QuartzConfig {
     @Bean
     public JobDetail invitationExpiryJobDetail() {
         return JobBuilder.newJob(InvitationExpiryJob.class)
-                .withIdentity("invitationExpiryJob")
+                .withIdentity("invitationExpiryJob", "admin")
                 .storeDurably()
                 .build();
     }
 
-    /** Runs once daily at 00:05 UTC */
+    /** Runs once daily at 00:05 UTC. */
     @Bean
     public Trigger invitationExpiryTrigger(JobDetail invitationExpiryJobDetail) {
         return TriggerBuilder.newTrigger()
                 .forJob(invitationExpiryJobDetail)
-                .withIdentity("invitationExpiryTrigger")
+                .withIdentity("invitationExpiryTrigger", "admin")
                 .withSchedule(CronScheduleBuilder.cronSchedule("0 5 0 * * ?"))
                 .build();
     }

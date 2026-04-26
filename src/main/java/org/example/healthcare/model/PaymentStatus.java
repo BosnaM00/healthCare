@@ -13,11 +13,14 @@ package org.example.healthcare.model;
  *             Set when a Dispute is opened.
  * REFUNDED  — Patient refunded in full or in part after dispute resolution or cancellation.
  *             Set by DisputeService or BookingService.cancel().
+ * FAILED    — Stripe PaymentIntent failed or was cancelled before funds were captured.
+ *             Set on payment_intent.payment_failed / payment_intent.canceled webhooks.
  */
 public enum PaymentStatus {
     RESERVED,
     HELD,
     RELEASED,
     DISPUTED,
-    REFUNDED
+    REFUNDED,
+    FAILED
 }
