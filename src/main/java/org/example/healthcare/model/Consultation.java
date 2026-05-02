@@ -48,9 +48,39 @@ public class Consultation {
     @Builder.Default
     private ConsultationStatus status = ConsultationStatus.SCHEDULED;
 
-    /** Daily.co / Twilio room name — generated at booking time */
+    /** Daily.co / Twilio room name — generated at booking-confirmed time. */
     @Column(name = "video_room_id")
     private String videoRoomId;
+
+    /** Full join URL returned by VideoProvider.createRoom; rendered by clients. */
+    @Column(name = "video_room_url", length = 512)
+    private String videoRoomUrl;
+
+    /** Provider identifier — "daily" for Daily.co; forward-compat for Twilio/Agora. */
+    @Column(name = "video_provider", nullable = false, length = 32)
+    @Builder.Default
+    private String videoProvider = "daily";
+
+    /** Instant after which the provider auto-deletes the room. */
+    @Column(name = "video_room_expires_at")
+    private Instant videoRoomExpiresAt;
+
+    /** Populated when status transitions to FAILED. NULL otherwise. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "failure_reason", length = 32)
+    private ConsultationFailureReason failureReason;
+
+    /** Timestamp of the earliest participant.joined webhook received. */
+    @Column(name = "first_joined_at")
+    private Instant firstJoinedAt;
+
+    /** Timestamp of the latest participant.left webhook received. */
+    @Column(name = "last_left_at")
+    private Instant lastLeftAt;
+
+    /** Phase 3: S3 key of the call recording. NULL until recording.ready webhook fires. */
+    @Column(name = "recording_s3_key", length = 512)
+    private String recordingS3Key;
 
     @Column(name = "started_at")
     private Instant startedAt;

@@ -51,6 +51,14 @@ public class WebhookEvent {
     @Builder.Default
     private WebhookEventStatus status = WebhookEventStatus.PENDING;
 
+    /**
+     * Source system that sent the event — "stripe" or "daily".
+     * Added in V4 migration to keep idempotency clean across providers.
+     */
+    @Column(nullable = false, length = 16)
+    @Builder.Default
+    private String source = "stripe";
+
     /** Number of processing attempts (incremented on each retry) */
     @Column(nullable = false)
     @Builder.Default

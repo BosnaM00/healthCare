@@ -16,6 +16,9 @@ public interface ConsultationRepository extends JpaRepository<Consultation, UUID
 
     Optional<Consultation> findByBookingId(UUID bookingId);
 
+    /** Used by VideoWebhookController to resolve the consultation from the Daily room name. */
+    Optional<Consultation> findByVideoRoomId(String videoRoomId);
+
     @Query("SELECT c FROM Consultation c JOIN c.booking b WHERE b.patient.id = :patientId")
     Page<Consultation> findByPatientId(UUID patientId, Pageable pageable);
 

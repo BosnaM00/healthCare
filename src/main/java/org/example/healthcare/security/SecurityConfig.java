@@ -55,8 +55,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // ── Stripe webhook — public, signature-verified inside the handler ──
+                // ── Webhook endpoints — public, signature-verified inside each handler ──
                 .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/stripe").permitAll()
+                // Daily.co video webhook — HMAC-SHA256 verified in VideoWebhookController
+                .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/video").permitAll()
                 // ── User registration & auth ───────────────────────────────────────
                 .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()

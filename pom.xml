@@ -122,6 +122,12 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- WebFlux — provides WebClient for non-blocking Daily.co REST API calls -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- AspectJ weaver — enables @PreAuthorize and AOP proxy support -->
         <dependency>
             <groupId>org.aspectj</groupId>

@@ -6,6 +6,7 @@ import org.example.healthcare.common.exception.ResourceNotFoundException;
 import org.example.healthcare.dto.booking.BookingRequest;
 import org.example.healthcare.dto.booking.BookingResponse;
 import org.example.healthcare.dto.slot.SlotResponse;
+import org.example.healthcare.event.BookingConfirmedEvent;
 import org.example.healthcare.model.*;
 import org.example.healthcare.repository.BookingRepository;
 import org.example.healthcare.repository.MedicRepository;
@@ -15,6 +16,7 @@ import org.example.healthcare.repository.UserRepository;
 import org.example.healthcare.service.BookingService;
 import org.example.healthcare.service.PaymentService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,12 +31,13 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
 
-    private final BookingRepository bookingRepository;
-    private final SlotRepository    slotRepository;
-    private final MedicRepository   medicRepository;
-    private final UserRepository    userRepository;
-    private final PaymentService    paymentService;
-    private final PaymentRepository paymentRepository;
+    private final BookingRepository        bookingRepository;
+    private final SlotRepository           slotRepository;
+    private final MedicRepository          medicRepository;
+    private final UserRepository           userRepository;
+    private final PaymentService           paymentService;
+    private final PaymentRepository        paymentRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Default consultation fee in major currency units (RON) — override per medic in a future phase */
     @Value("${app.payment.default-consultation-fee:150.00}")
@@ -74,6 +77,11 @@ public class BookingServiceImpl implements BookingService {
         paymentService.reserve(booking.getId(), defaultConsultationFee, stripeCustomerId);
 
         slot.setStatus(SlotStatus.BOOKED);
+
+        // Publish event so ConsultationServiceImpl can create the Consultation and provision the video room.
+        // Fired after the booking transaction commits so the event listener reads a consistent DB state.
+        eventPublisher.publishEvent(new BookingConfirmedEvent(
+                this, booking.getId(), patient.getId(), medic.getUser().getId()));
 
         return toResponse(booking);
     }
