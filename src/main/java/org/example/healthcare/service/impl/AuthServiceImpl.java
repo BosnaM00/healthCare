@@ -33,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
         AppUserDetails principal = new AppUserDetails(user);
         String token = jwtTokenProvider.generate(principal);
 
-        return new LoginResponse(token, user.getId(), user.getRole());
+        return new LoginResponse(token, user.getId(), user.getRole(),
+                user.getEmail(), user.getFirstName(), user.getLastName());
     }
 }
