@@ -4,6 +4,8 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.healthcare.common.exception.BusinessException;
 import org.example.healthcare.common.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +35,7 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String PROBLEM_BASE = "https://mediconnect.ro/problems/";
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -71,7 +74,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleAll(Exception ex, HttpServletRequest req) {
-        // Stripe errors are already wrapped in BusinessException by StripePaymentService
+        log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "internal-error",
                 "Internal Server Error",
                 "An unexpected error occurred. Please contact support with the traceId.", req);
