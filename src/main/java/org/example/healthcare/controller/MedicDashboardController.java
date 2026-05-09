@@ -67,8 +67,8 @@ public class MedicDashboardController {
                         new SlotResponse(
                                 b.getSlot().getId(),
                                 b.getSlot().getMedic().getId(),
-                                b.getSlot().getStartsAt(),
-                                b.getSlot().getEndsAt(),
+                                b.getSlot().getStartsAt(),   // JSON "startTime"
+                                b.getSlot().getEndsAt(),     // JSON "endTime"
                                 b.getSlot().getStatus())))
                 .toList();
 

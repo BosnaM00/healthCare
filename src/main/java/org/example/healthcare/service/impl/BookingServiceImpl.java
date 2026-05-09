@@ -135,8 +135,8 @@ public class BookingServiceImpl implements BookingService {
         return new SlotResponse(
                 slot.getId(),
                 slot.getMedic().getId(),
-                slot.getStartsAt(),
-                slot.getEndsAt(),
+                slot.getStartsAt(),   // maps to JSON "startTime"
+                slot.getEndsAt(),     // maps to JSON "endTime"
                 slot.getStatus()
         );
     }

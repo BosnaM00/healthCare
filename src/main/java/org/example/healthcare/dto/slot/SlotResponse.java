@@ -8,7 +8,7 @@ import java.util.UUID;
 public record SlotResponse(
         UUID id,
         UUID medicId,
-        Instant startsAt,
-        Instant endsAt,
+        Instant startTime,
+        Instant endTime,
         SlotStatus status
 ) {}
