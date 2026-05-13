@@ -151,26 +151,26 @@ ON CONFLICT DO NOTHING;
 
 -- ── Consultations ─────────────────────────────────────────────────────────────
 
-INSERT INTO consultations (id, booking_id, status, video_room_id, video_provider,
+INSERT INTO consultations (id, booking_id, status, video_room_id, video_room_url, video_provider,
                            started_at, ended_at, duration_seconds, release_at) VALUES
     -- Completed (payment already released)
     ('10000000-0000-0000-0000-000000000001',
      'e1000000-0000-0000-0000-000000000001',
-     'COMPLETED', 'room-seed-001', 'daily',
+     'COMPLETED', 'room-seed-001', 'https://mediconnect.daily.co/room-seed-001', 'daily',
      NOW() - INTERVAL '30 days',
      NOW() - INTERVAL '30 days' + INTERVAL '28 minutes',
      1680, NOW() - INTERVAL '28 days'),
 
     ('10000000-0000-0000-0000-000000000002',
      'e1000000-0000-0000-0000-000000000002',
-     'COMPLETED', 'room-seed-002', 'daily',
+     'COMPLETED', 'room-seed-002', 'https://mediconnect.daily.co/room-seed-002', 'daily',
      NOW() - INTERVAL '20 days',
      NOW() - INTERVAL '20 days' + INTERVAL '25 minutes',
      1500, NOW() - INTERVAL '18 days'),
 
     ('10000000-0000-0000-0000-000000000003',
      'e1000000-0000-0000-0000-000000000003',
-     'COMPLETED', 'room-seed-003', 'daily',
+     'COMPLETED', 'room-seed-003', 'https://mediconnect.daily.co/room-seed-003', 'daily',
      NOW() - INTERVAL '10 days',
      NOW() - INTERVAL '10 days' + INTERVAL '30 minutes',
      1800, NOW() - INTERVAL '8 days'),
@@ -178,7 +178,7 @@ INSERT INTO consultations (id, booking_id, status, video_room_id, video_provider
     -- Completed but still in 48h dispute window
     ('10000000-0000-0000-0000-000000000004',
      'e1000000-0000-0000-0000-000000000004',
-     'COMPLETED', 'room-seed-004', 'daily',
+     'COMPLETED', 'room-seed-004', 'https://mediconnect.daily.co/room-seed-004', 'daily',
      NOW() - INTERVAL '1 day',
      NOW() - INTERVAL '1 day' + INTERVAL '27 minutes',
      1620, NOW() + INTERVAL '23 hours'),
@@ -186,11 +186,11 @@ INSERT INTO consultations (id, booking_id, status, video_room_id, video_provider
     -- Upcoming (SCHEDULED)
     ('10000000-0000-0000-0000-000000000005',
      'e1000000-0000-0000-0000-000000000005',
-     'SCHEDULED', 'room-seed-005', 'daily',
+     'SCHEDULED', 'room-seed-005', 'https://mediconnect.daily.co/room-seed-005', 'daily',
      NULL, NULL, NULL, NULL),
 
     ('10000000-0000-0000-0000-000000000006',
      'e1000000-0000-0000-0000-000000000006',
-     'SCHEDULED', 'room-seed-006', 'daily',
+     'SCHEDULED', 'room-seed-006', 'https://mediconnect.daily.co/room-seed-006', 'daily',
      NULL, NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;
