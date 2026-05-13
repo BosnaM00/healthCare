@@ -61,8 +61,8 @@ public class MedicDashboardController {
                         case REFUNDED, FAILED -> "CANCELLED";
                         default      -> "SCHEDULED";
                     };
-                    var user  = b.getMedic().getUser();
-                    var medic = new BookingResponse.MedicInfo(
+                    var user       = b.getMedic().getUser();
+                    var medicInfo  = new BookingResponse.MedicInfo(
                             b.getMedic().getId(), user.getId(),
                             user.getFirstName(), user.getLastName());
                     return new BookingResponse(
@@ -81,7 +81,7 @@ public class MedicDashboardController {
                                     b.getSlot().getStartsAt(),
                                     b.getSlot().getEndsAt(),
                                     b.getSlot().getStatus()),
-                            medic);
+                            medicInfo);
                 })
                 .toList();
 
