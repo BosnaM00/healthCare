@@ -36,6 +36,9 @@ public class StripePaymentService {
     @Value("${stripe.api.key:sk_test_placeholder}")
     private String secretKey;
 
+    @Value("${app.payments.stripe-enabled:false}")
+    private boolean stripeEnabled;
+
     // ── PaymentIntent ─────────────────────────────────────────────────────────
 
     /**
@@ -117,6 +120,10 @@ public class StripePaymentService {
     // ── Capture (legacy — kept for ConsultationServiceImpl compatibility) ─────
 
     public void capturePaymentIntent(String paymentIntentId) {
+        if (!stripeEnabled) {
+            log.info("[STRIPE STUB] capturePaymentIntent skipped — app.payments.stripe-enabled=false. intentId={}", paymentIntentId);
+            return;
+        }
         try {
             PaymentIntent pi = PaymentIntent.retrieve(paymentIntentId);
             if ("requires_capture".equals(pi.getStatus())) {
