@@ -14,7 +14,13 @@ public record BookingResponse(
         UUID slotId,
         ConsultationType consultationType,
         BookingPaymentStatus paymentStatus,
+        /** Derived booking lifecycle status for the UI (SCHEDULED, CONFIRMED, COMPLETED, CANCELLED). */
+        String bookingStatus,
         Instant cancellationPolicyAcceptedAt,
         Instant createdAt,
-        SlotResponse slot
-) {}
+        SlotResponse slot,
+        /** Medic display info — null only if the medic record is unavailable. */
+        MedicInfo medic
+) {
+    public record MedicInfo(UUID id, UUID userId, String firstName, String lastName) {}
+}

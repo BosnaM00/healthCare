@@ -55,21 +55,34 @@ public class MedicDashboardController {
         var bookings = bookingRepository
                 .findUpcomingByMedicId(medic.getId(), Instant.now())
                 .stream()
-                .map(b -> new BookingResponse(
-                        b.getId(),
-                        b.getPatient().getId(),
-                        b.getMedic().getId(),
-                        b.getSlot().getId(),
-                        b.getConsultationType(),
-                        b.getPaymentStatus(),
-                        b.getCancellationPolicyAcceptedAt(),
-                        b.getCreatedAt(),
-                        new SlotResponse(
-                                b.getSlot().getId(),
-                                b.getSlot().getMedic().getId(),
-                                b.getSlot().getStartsAt(),   // JSON "startTime"
-                                b.getSlot().getEndsAt(),     // JSON "endTime"
-                                b.getSlot().getStatus())))
+                .map(b -> {
+                    String bookingStatus = switch (b.getPaymentStatus()) {
+                        case PAID    -> "CONFIRMED";
+                        case REFUNDED, FAILED -> "CANCELLED";
+                        default      -> "SCHEDULED";
+                    };
+                    var user  = b.getMedic().getUser();
+                    var medic = new BookingResponse.MedicInfo(
+                            b.getMedic().getId(), user.getId(),
+                            user.getFirstName(), user.getLastName());
+                    return new BookingResponse(
+                            b.getId(),
+                            b.getPatient().getId(),
+                            b.getMedic().getId(),
+                            b.getSlot().getId(),
+                            b.getConsultationType(),
+                            b.getPaymentStatus(),
+                            bookingStatus,
+                            b.getCancellationPolicyAcceptedAt(),
+                            b.getCreatedAt(),
+                            new SlotResponse(
+                                    b.getSlot().getId(),
+                                    b.getSlot().getMedic().getId(),
+                                    b.getSlot().getStartsAt(),
+                                    b.getSlot().getEndsAt(),
+                                    b.getSlot().getStatus()),
+                            medic);
+                })
                 .toList();
 
         return ResponseEntity.ok(bookings);

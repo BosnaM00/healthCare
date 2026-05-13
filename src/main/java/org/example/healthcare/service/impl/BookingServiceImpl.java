@@ -142,6 +142,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private BookingResponse toResponse(Booking booking) {
+        String bookingStatus = switch (booking.getPaymentStatus()) {
+            case PAID    -> "CONFIRMED";
+            case REFUNDED, FAILED -> "CANCELLED";
+            default      -> "SCHEDULED";
+        };
+        var user   = booking.getMedic().getUser();
+        var medic  = new BookingResponse.MedicInfo(
+                booking.getMedic().getId(),
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName());
         return new BookingResponse(
                 booking.getId(),
                 booking.getPatient().getId(),
@@ -149,9 +160,11 @@ public class BookingServiceImpl implements BookingService {
                 booking.getSlot().getId(),
                 booking.getConsultationType(),
                 booking.getPaymentStatus(),
+                bookingStatus,
                 booking.getCancellationPolicyAcceptedAt(),
                 booking.getCreatedAt(),
-                toSlotResponse(booking.getSlot())
+                toSlotResponse(booking.getSlot()),
+                medic
         );
     }
 }
