@@ -420,12 +420,18 @@ public class ConsultationServiceImpl implements ConsultationService {
     }
 
     private ConsultationResponse toResponse(Consultation c, String decryptedNotes) {
+        // Derive URL from room ID if the column was never populated (e.g. pre-V8 seed rows)
+        String roomUrl = c.getVideoRoomUrl() != null
+                ? c.getVideoRoomUrl()
+                : c.getVideoRoomId() != null
+                        ? "https://" + videoConfig.getDaily().getDomain() + "/" + c.getVideoRoomId()
+                        : null;
         return new ConsultationResponse(
                 c.getId(),
                 c.getBooking().getId(),
                 c.getStatus(),
                 c.getVideoRoomId(),
-                c.getVideoRoomUrl(),
+                roomUrl,
                 c.getVideoProvider(),
                 c.getStartedAt(),
                 c.getEndedAt(),
