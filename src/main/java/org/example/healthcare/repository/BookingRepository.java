@@ -30,6 +30,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             SELECT b FROM Booking b
             JOIN FETCH b.slot s
             JOIN FETCH b.patient p
+            JOIN FETCH b.medic m
+            JOIN FETCH m.user
             WHERE b.medic.id = :medicId
               AND s.startsAt > :now
               AND b.paymentStatus != org.example.healthcare.model.BookingPaymentStatus.REFUNDED
