@@ -55,8 +55,11 @@ public class ConsultationNoShowJob implements Job {
         Instant now         = Instant.now();
         Instant graceCutoff = now.minus(NO_SHOW_GRACE_MINUTES, ChronoUnit.MINUTES);
 
-        // Find SCHEDULED consultations whose slot start is past the grace period
-        List<Consultation> candidates = consultationRepository.findByStatus(ConsultationStatus.SCHEDULED)
+        // Find SCHEDULED consultations whose slot start is past the grace period.
+        // Uses a JOIN FETCH query so booking/slot/medic/patient are loaded in one query,
+        // avoiding LazyInitializationException when accessed outside the repo session.
+        List<Consultation> candidates = consultationRepository
+                .findByStatusWithAssociations(ConsultationStatus.SCHEDULED)
                 .stream()
                 .filter(c -> {
                     Instant slotStart = c.getBooking().getSlot().getStartsAt();

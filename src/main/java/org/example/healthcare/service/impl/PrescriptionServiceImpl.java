@@ -15,6 +15,7 @@ import org.example.healthcare.service.PrescriptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -51,17 +52,17 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     @Override
-    public PrescriptionResponse getByConsultationId(UUID consultationId, UUID principalId) {
-        Prescription prescription = prescriptionRepository.findByConsultationId(consultationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Prescription for Consultation", consultationId));
-
-        boolean isPatient = prescription.getConsultation().getBooking().getPatient().getId().equals(principalId);
-        boolean isMedic   = prescription.getConsultation().getBooking().getMedic().getUser().getId().equals(principalId);
-        if (!isPatient && !isMedic)
-            throw new BusinessException("Access denied");
-
-        String content = encryptionService.decrypt(prescription.getContentEncrypted());
-        return toResponse(prescription, content);
+    public List<PrescriptionResponse> getByConsultationId(UUID consultationId, UUID principalId) {
+        return prescriptionRepository.findByConsultationId(consultationId)
+                .map(prescription -> {
+                    boolean isPatient = prescription.getConsultation().getBooking().getPatient().getId().equals(principalId);
+                    boolean isMedic   = prescription.getConsultation().getBooking().getMedic().getUser().getId().equals(principalId);
+                    if (!isPatient && !isMedic)
+                        throw new BusinessException("Access denied");
+                    String content = encryptionService.decrypt(prescription.getContentEncrypted());
+                    return List.of(toResponse(prescription, content));
+                })
+                .orElse(List.of());
     }
 
     @Override

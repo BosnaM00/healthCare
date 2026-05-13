@@ -1,5 +1,6 @@
 package org.example.healthcare.service;
 
+import org.example.healthcare.dto.consultation.ConsultationNoteResponse;
 import org.example.healthcare.dto.consultation.ConsultationNotesRequest;
 import org.example.healthcare.dto.consultation.ConsultationResponse;
 import org.example.healthcare.dto.consultation.DiagnosticsResponse;
@@ -66,9 +67,14 @@ public interface ConsultationService {
 
     ConsultationResponse getById(UUID id, UUID principalId);
 
+    ConsultationResponse getByBookingId(UUID bookingId, UUID principalId);
+
     Page<ConsultationResponse> getPatientHistory(UUID patientId, Pageable pageable);
 
     Page<ConsultationResponse> getMedicHistory(UUID medicId, Pageable pageable);
+
+    /** Medic or authorised party — fetches decrypted notes for a consultation. */
+    ConsultationNoteResponse getNotes(UUID consultationId, UUID principalId);
 
     /** Medic saves/updates encrypted consultation notes — only allowed in COMPLETED state. */
     ConsultationResponse saveNotes(UUID consultationId, UUID medicUserId, ConsultationNotesRequest request);

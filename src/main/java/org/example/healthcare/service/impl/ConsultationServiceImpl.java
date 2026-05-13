@@ -1,7 +1,7 @@
 package org.example.healthcare.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.healthcare.common.EncryptionService;
@@ -300,7 +300,7 @@ public class ConsultationServiceImpl implements ConsultationService {
                             "networkRttMs", String.valueOf(request.networkRttMs()),
                             "mediaState",    request.mediaState() != null ? request.mediaState() : "unknown",
                             "userId",        principalUserId.toString()));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             payloadJson = "{\"error\":\"serialization_failed\"}";
         }
 
@@ -343,6 +343,13 @@ public class ConsultationServiceImpl implements ConsultationService {
     // ── Read methods ──────────────────────────────────────────────────────────
 
     @Override
+    public ConsultationResponse getByBookingId(UUID bookingId, UUID principalId) {
+        Consultation consultation = consultationRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Consultation", bookingId));
+        return getById(consultation.getId(), principalId);
+    }
+
+    @Override
     public ConsultationResponse getById(UUID id, UUID principalId) {
         Consultation consultation = findOrThrow(id);
         boolean isPatient = consultation.getBooking().getPatient().getId().equals(principalId);
@@ -370,13 +377,31 @@ public class ConsultationServiceImpl implements ConsultationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ConsultationNoteResponse getNotes(UUID consultationId, UUID principalId) {
+        Consultation consultation = findOrThrow(consultationId);
+        String decrypted = consultation.getNotesEncrypted() != null
+                ? encryptionService.decrypt(consultation.getNotesEncrypted())
+                : "";
+        return new ConsultationNoteResponse(
+                consultation.getId(),
+                consultation.getId(),
+                decrypted,
+                null,
+                consultation.getEndedAt() != null ? consultation.getEndedAt() : consultation.getStartedAt(),
+                false
+        );
+    }
+
+    @Override
     @Transactional
     public ConsultationResponse saveNotes(UUID consultationId, UUID medicUserId, ConsultationNotesRequest request) {
         Consultation consultation = findOrThrow(consultationId);
         assertMedicOwns(consultation, medicUserId);
 
-        if (consultation.getStatus() != ConsultationStatus.COMPLETED)
-            throw new BusinessException("Notes can only be saved after consultation is COMPLETED");
+        if (consultation.getStatus() != ConsultationStatus.COMPLETED
+                && consultation.getStatus() != ConsultationStatus.IN_PROGRESS)
+            throw new BusinessException("Notes can only be saved during an active or completed consultation");
 
         consultation.setNotesEncrypted(encryptionService.encrypt(request.notes()));
         return toResponse(consultation, request.notes());

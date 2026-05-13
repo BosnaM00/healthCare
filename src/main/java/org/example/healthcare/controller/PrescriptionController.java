@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -35,10 +36,10 @@ public class PrescriptionController {
         return prescriptionService.create(consultationId, principal.getUserId(), request);
     }
 
-    /** AUTH — retrieve decrypted prescription */
+    /** AUTH — retrieve decrypted prescriptions for a consultation; empty list if none issued yet */
     @GetMapping("/consultation/{consultationId}")
-    public PrescriptionResponse getByConsultationId(@PathVariable UUID consultationId,
-                                                    @AuthenticationPrincipal AppUserDetails principal) {
+    public List<PrescriptionResponse> getByConsultationId(@PathVariable UUID consultationId,
+                                                          @AuthenticationPrincipal AppUserDetails principal) {
         return prescriptionService.getByConsultationId(consultationId, principal.getUserId());
     }
 }

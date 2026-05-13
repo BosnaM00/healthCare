@@ -102,6 +102,14 @@ public class ConsultationController {
         return consultationService.getDiagnostics(id, principal.getUserId());
     }
 
+    /** AUTH — look up consultation by booking id (used by the UI booking-detail page). */
+    @GetMapping("/booking/{bookingId}")
+    public ResponseEntity<ConsultationResponse> getByBookingId(
+            @PathVariable UUID bookingId,
+            @AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(consultationService.getByBookingId(bookingId, principal.getUserId()));
+    }
+
     /** AUTH — get consultation details; decrypted notes returned only to medic. */
     @GetMapping("/{id}")
     public ConsultationResponse getById(@PathVariable UUID id,
@@ -122,6 +130,13 @@ public class ConsultationController {
                                                       Pageable pageable) {
         UUID medicId = medicService.getByUserId(principal.getUserId()).id();
         return consultationService.getMedicHistory(medicId, pageable);
+    }
+
+    /** AUTH — fetch decrypted consultation notes (empty string if none saved yet). */
+    @GetMapping("/{id}/notes")
+    public ResponseEntity<ConsultationNoteResponse> getNotes(@PathVariable UUID id,
+                                                              @AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(consultationService.getNotes(id, principal.getUserId()));
     }
 
     /** MEDIC — save / update encrypted consultation notes. */

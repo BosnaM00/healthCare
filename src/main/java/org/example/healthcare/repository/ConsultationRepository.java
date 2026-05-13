@@ -35,5 +35,18 @@ public interface ConsultationRepository extends JpaRepository<Consultation, UUID
            "AND c.releaseAt <= :now")
     List<Consultation> findReleasable(Instant now);
 
-    List<Consultation> findByStatus(ConsultationStatus status);
+    /**
+     * Eagerly fetches booking → slot, medic → user, and patient so that Quartz jobs
+     * can access these associations outside the repository transaction boundary.
+     */
+    @Query("""
+            SELECT c FROM Consultation c
+            JOIN FETCH c.booking b
+            JOIN FETCH b.slot
+            JOIN FETCH b.medic m
+            JOIN FETCH m.user
+            JOIN FETCH b.patient
+            WHERE c.status = :status
+            """)
+    List<Consultation> findByStatusWithAssociations(@org.springframework.data.repository.query.Param("status") ConsultationStatus status);
 }

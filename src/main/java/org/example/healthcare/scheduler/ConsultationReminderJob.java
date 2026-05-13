@@ -48,9 +48,11 @@ public class ConsultationReminderJob implements Job {
         Instant windowStart = now.plus(WINDOW_MIN_MINUTES, ChronoUnit.MINUTES);
         Instant windowEnd   = now.plus(WINDOW_MAX_MINUTES, ChronoUnit.MINUTES);
 
-        // Find SCHEDULED consultations whose slot starts within the reminder window
+        // Find SCHEDULED consultations whose slot starts within the reminder window.
+        // Uses a JOIN FETCH query so booking/slot/medic/patient are loaded in one query,
+        // avoiding LazyInitializationException when accessed outside the repo session.
         List<Consultation> upcoming = consultationRepository
-                .findByStatus(ConsultationStatus.SCHEDULED)
+                .findByStatusWithAssociations(ConsultationStatus.SCHEDULED)
                 .stream()
                 .filter(c -> {
                     Instant slotStart = c.getBooking().getSlot().getStartsAt();
