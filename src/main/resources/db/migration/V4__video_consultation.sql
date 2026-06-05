@@ -26,7 +26,7 @@ ALTER TABLE consultations
     ADD COLUMN IF NOT EXISTS recording_s3_key      VARCHAR(512);
 
 ALTER TABLE consultations
-    ADD CONSTRAINT IF NOT EXISTS chk_failure_reason
+    ADD CONSTRAINT chk_failure_reason
         CHECK (failure_reason IS NULL OR failure_reason IN (
             'MEDIC_NO_SHOW', 'PATIENT_NO_SHOW', 'TECHNICAL_FAILURE',
             'MUTUAL_CANCEL', 'OTHER'

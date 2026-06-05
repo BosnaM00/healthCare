@@ -1,7 +1,5 @@
 package org.example.healthcare.video;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -206,20 +204,17 @@ public class DailyVideoProvider implements VideoProvider {
 
     // ── Daily REST response shapes ────────────────────────────────────────────
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class DailyRoomResponse {
         public String name;
         public String url;
         public RoomConfig config;
 
-        @JsonIgnoreProperties(ignoreUnknown = true)
         static class RoomConfig {
             public long exp;
             public long nbf;
         }
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class DailyTokenResponse {
         public String token;
     }
