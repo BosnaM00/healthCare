@@ -34,8 +34,11 @@ public class User {
     @Column(name = "last_name", length = 100)
     private String lastName;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = true)   // Google-only users have no local password
     private String passwordHash;
+
+    @Column(name = "google_id", length = 255, unique = true)
+    private String googleId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

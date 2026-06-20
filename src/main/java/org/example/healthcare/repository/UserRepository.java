@@ -13,4 +13,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    /**
+     * Looks up a user by their Google subject identifier.
+     * Used during Google Sign-In to check if this Google account is already linked.
+     */
+    Optional<User> findByGoogleId(String googleId);
 }

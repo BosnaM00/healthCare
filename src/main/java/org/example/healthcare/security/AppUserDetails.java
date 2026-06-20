@@ -26,7 +26,7 @@ public class AppUserDetails implements UserDetails {
     public AppUserDetails(User user) {
         this.userId   = user.getId();
         this.email    = user.getEmail();
-        this.password = user.getPasswordHash();
+        this.password = user.getPasswordHash() != null ? user.getPasswordHash() : "";
         this.role     = user.getRole();
     }
 
