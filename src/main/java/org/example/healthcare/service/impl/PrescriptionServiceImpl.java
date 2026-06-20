@@ -66,6 +66,16 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     @Override
+    public List<PrescriptionResponse> getForPatient(UUID patientUserId) {
+        return prescriptionRepository
+                .findByConsultation_Booking_Patient_IdOrderByCreatedAtDesc(patientUserId)
+                .stream()
+                .map(prescription -> toResponse(
+                        prescription, encryptionService.decrypt(prescription.getContentEncrypted())))
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void setPdfKey(UUID prescriptionId, String s3Key) {
         Prescription prescription = prescriptionRepository.findById(prescriptionId)

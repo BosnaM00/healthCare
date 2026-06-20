@@ -42,4 +42,10 @@ public class PrescriptionController {
                                                           @AuthenticationPrincipal AppUserDetails principal) {
         return prescriptionService.getByConsultationId(consultationId, principal.getUserId());
     }
+
+    /** AUTH (patient) — retrieve all of the authenticated patient's decrypted prescriptions, newest first */
+    @GetMapping("/my")
+    public List<PrescriptionResponse> getMyPrescriptions(@AuthenticationPrincipal AppUserDetails principal) {
+        return prescriptionService.getForPatient(principal.getUserId());
+    }
 }
