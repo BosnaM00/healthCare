@@ -1,7 +1,6 @@
 package org.example.healthcare.service;
 
 import org.example.healthcare.dto.payment.PaymentResponse;
-import org.example.healthcare.model.Payment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -22,9 +21,6 @@ public interface PaymentService {
     PaymentResponse reserve(UUID bookingId, BigDecimal amount, String stripeCustomerId);
 
     PaymentResponse getByBookingId(UUID bookingId, UUID principalId);
-
-    /** Returns the raw {@link Payment} entity by id, or null if not found. Used by controllers to access transient fields like clientSecret. */
-    Payment findById(UUID paymentId);
 
     Page<PaymentResponse> getPatientPayments(UUID patientId, Pageable pageable);
 

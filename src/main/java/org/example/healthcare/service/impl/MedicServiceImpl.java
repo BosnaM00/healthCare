@@ -9,6 +9,7 @@ import org.example.healthcare.dto.medic.MedicSearchRequest;
 import org.example.healthcare.dto.medic.MedicVerificationRequest;
 import org.example.healthcare.dto.specialty.SpecialtyResponse;
 import org.example.healthcare.model.Clinic;
+import org.example.healthcare.model.ConsultationType;
 import org.example.healthcare.model.Medic;
 import org.example.healthcare.model.Specialty;
 import org.example.healthcare.model.User;
@@ -17,6 +18,7 @@ import org.example.healthcare.repository.MedicRepository;
 import org.example.healthcare.repository.SpecialtyRepository;
 import org.example.healthcare.repository.UserRepository;
 import org.example.healthcare.service.MedicService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,6 +37,9 @@ public class MedicServiceImpl implements MedicService {
     private final UserRepository userRepository;
     private final SpecialtyRepository specialtyRepository;
     private final ClinicRepository clinicRepository;
+
+    @Value("${app.payment.default-consultation-fee:150.00}")
+    private java.math.BigDecimal defaultConsultationFee;
 
     @Override
     @Transactional
@@ -148,11 +153,21 @@ public class MedicServiceImpl implements MedicService {
                 medic.getId(),
                 medic.getUser().getId(),
                 medic.getClinic() != null ? medic.getClinic().getId() : null,
+                medic.getClinic() != null ? medic.getClinic().getName() : null,
+                medic.getUser().getFirstName(),
+                medic.getUser().getLastName(),
                 medic.getLicenseNumber(),
                 medic.getLicenseExpiresAt(),
                 medic.getVerificationStatus(),
                 medic.isAvailableForInstant(),
-                specialties
+                specialties,
+                // Placeholders — consultation offering, languages and per-medic pricing
+                // are not yet modeled on Medic (Phase C). pricePerSession mirrors the
+                // flat fee actually charged at booking (app.payment.default-consultation-fee).
+                List.of(ConsultationType.VIDEO),
+                List.of("ro"),
+                defaultConsultationFee,
+                "RON"
         );
     }
 }

@@ -2,13 +2,11 @@ package org.example.healthcare.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.healthcare.common.StripePaymentService;
 import org.example.healthcare.dto.payment.PaymentResponse;
 import org.example.healthcare.dto.stripe.PaymentIntentRequest;
 import org.example.healthcare.dto.stripe.PaymentIntentResponse;
 import org.example.healthcare.dto.stripe.RefundRequest;
-import org.example.healthcare.model.Booking;
-import org.example.healthcare.model.PaymentStatus;
-import org.example.healthcare.repository.BookingRepository;
 import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.MedicService;
 import org.example.healthcare.service.PaymentService;
@@ -20,7 +18,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -39,16 +36,21 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService      paymentService;
-    private final MedicService        medicService;
-    private final BookingRepository   bookingRepository;
+    private final PaymentService        paymentService;
+    private final MedicService          medicService;
+    private final StripePaymentService  stripePaymentService;
 
     @Value("${stripe.publishable-key:pk_test_placeholder}")
     private String publishableKey;
 
     /**
-     * Creates a Stripe PaymentIntent for the given booking and returns the client_secret
-     * needed by Stripe.js on the frontend.
+     * Returns the Stripe {@code client_secret} for the booking's payment so Stripe.js
+     * can confirm it on the frontend.
+     *
+     * <p>The Payment (and its PaymentIntent) is created during booking creation, so this
+     * endpoint does NOT create a new one — it looks up the existing payment (ownership
+     * enforced by {@link PaymentService#getByBookingId}) and fetches the client_secret
+     * fresh from Stripe.
      *
      * <p>Role: {@code PATIENT} only. The patient must own the booking.
      */
@@ -59,25 +61,12 @@ public class PaymentController {
             @Valid @RequestBody PaymentIntentRequest request,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        Booking booking = bookingRepository.findById(request.bookingId())
-                .orElseThrow(() -> new org.example.healthcare.common.exception.ResourceNotFoundException(
-                        "Booking", request.bookingId()));
+        // Ownership-checked lookup of the payment reserved at booking time.
+        PaymentResponse payment = paymentService.getByBookingId(request.bookingId(), principal.getUserId());
 
-        // Derive amount from slot price (medic / clinic sets this)
-        BigDecimal amount = booking.getMedic().getUser() != null
-                ? BigDecimal.valueOf(150) // TODO Phase C: read from medic/service pricing
-                : BigDecimal.valueOf(150);
+        String clientSecret = stripePaymentService.retrieveClientSecret(payment.stripePaymentIntentId());
 
-        String stripeCustomerId = booking.getPatient().getStripeCustomerId();
-        var paymentResponse = paymentService.reserve(request.bookingId(), amount, stripeCustomerId);
-
-        // Retrieve client_secret from the Payment entity (set by service after PI creation)
-        var payment = paymentService.findById(paymentResponse.id());
-
-        return new PaymentIntentResponse(
-                paymentResponse.id(),
-                payment != null ? payment.getClientSecret() : null,
-                publishableKey);
+        return new PaymentIntentResponse(payment.id(), clientSecret, publishableKey);
     }
 
     /** Get a specific payment by its UUID (owner or operator). */

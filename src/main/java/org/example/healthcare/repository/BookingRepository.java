@@ -2,6 +2,7 @@ package org.example.healthcare.repository;
 
 import org.example.healthcare.model.Booking;
 import org.example.healthcare.model.BookingPaymentStatus;
+import org.example.healthcare.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,4 +39,22 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             ORDER BY s.startsAt ASC
             """)
     List<Booking> findUpcomingByMedicId(@Param("medicId") UUID medicId, @Param("now") Instant now);
+
+    /** True if the medic has at least one booking with the given patient (authorization check). */
+    boolean existsByMedicIdAndPatientId(UUID medicId, UUID patientId);
+
+    /** Distinct patients (Users) that have ever booked the given medic. */
+    @Query("SELECT DISTINCT b.patient FROM Booking b WHERE b.medic.id = :medicId")
+    List<User> findDistinctPatientsByMedicId(@Param("medicId") UUID medicId);
+
+    /** All bookings between a medic and a patient, slot fetched, newest slot first. */
+    @Query("""
+            SELECT b FROM Booking b
+            JOIN FETCH b.slot s
+            WHERE b.medic.id = :medicId
+              AND b.patient.id = :patientId
+            ORDER BY s.startsAt DESC
+            """)
+    List<Booking> findByMedicIdAndPatientId(@Param("medicId") UUID medicId,
+                                            @Param("patientId") UUID patientId);
 }

@@ -96,7 +96,7 @@ public class ConsultationServiceImpl implements ConsultationService {
                 .minus(5, ChronoUnit.MINUTES); // allow early join 5 min before
 
         VideoRoom room = videoProvider.createRoom(
-                null, // we use bookingId as seed below; pass null to use stable name
+                booking.getId(), // seed the provider room name; overridden with booking-stable name below
                 earliest, roomExpiry, RoomPrivacy.PRIVATE);
 
         // Override with booking-stable room name when provider returns a generated one

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,4 +50,15 @@ public interface ConsultationRepository extends JpaRepository<Consultation, UUID
             WHERE c.status = :status
             """)
     List<Consultation> findByStatusWithAssociations(@org.springframework.data.repository.query.Param("status") ConsultationStatus status);
+
+    /** All consultations between a medic and a patient, newest started first — used for the patient timeline. */
+    @Query("""
+            SELECT c FROM Consultation c
+            JOIN c.booking b
+            WHERE b.medic.id = :medicId
+              AND b.patient.id = :patientId
+            ORDER BY c.startedAt DESC
+            """)
+    List<Consultation> findByMedicIdAndPatientId(@Param("medicId") UUID medicId,
+                                                 @Param("patientId") UUID patientId);
 }

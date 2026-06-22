@@ -17,6 +17,14 @@ public interface PrescriptionService {
     /** Patient retrieves all of their own decrypted prescriptions, newest first */
     List<PrescriptionResponse> getForPatient(UUID patientUserId);
 
+    /**
+     * Generates a PDF of the prescription on demand. Accessible to the patient it was issued to
+     * or the treating medic; throws if the principal is neither.
+     *
+     * @return the rendered PDF as a byte array
+     */
+    byte[] generatePdf(UUID prescriptionId, UUID principalId);
+
     /** Called by async job after PDF is generated and uploaded to S3 */
     void setPdfKey(UUID prescriptionId, String s3Key);
 }

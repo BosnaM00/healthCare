@@ -117,6 +117,26 @@ public class StripePaymentService {
         }
     }
 
+    /**
+     * Retrieves the {@code client_secret} of an existing PaymentIntent so the frontend
+     * can confirm the payment with Stripe.js.
+     *
+     * <p>The secret is fetched fresh from Stripe on each call and never persisted —
+     * {@link org.example.healthcare.model.Payment#getClientSecret()} is {@code @Transient}.
+     *
+     * @param paymentIntentId Stripe PI id created at booking time (reserve)
+     * @return the PaymentIntent's client_secret
+     */
+    public String retrieveClientSecret(String paymentIntentId) {
+        try {
+            PaymentIntent pi = PaymentIntent.retrieve(paymentIntentId);
+            return pi.getClientSecret();
+        } catch (StripeException e) {
+            log.error("Failed to retrieve client_secret for PaymentIntent {}: {}", paymentIntentId, e.getMessage());
+            throw new BusinessException("Payment retrieval failed: " + e.getCode());
+        }
+    }
+
     // ── Capture (legacy — kept for ConsultationServiceImpl compatibility) ─────
 
     public void capturePaymentIntent(String paymentIntentId) {

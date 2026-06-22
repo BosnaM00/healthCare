@@ -117,11 +117,15 @@ public class DailyVideoProvider implements VideoProvider {
         // Disable recording for non-owner participants; recording controlled by OWNER
         properties.put("start_cloud_recording", false);
 
+        // Daily's /meeting-tokens API expects the token claims nested under "properties"
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("properties", properties);
+
         try {
             DailyTokenResponse response = dailyClient()
                     .post()
                     .uri("/meeting-tokens")
-                    .bodyValue(properties)
+                    .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(DailyTokenResponse.class)
                     .block();

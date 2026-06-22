@@ -192,11 +192,6 @@ public class PaymentServiceImpl implements PaymentService {
         throw new BusinessException("No Stripe account configured for medic " + medic.getId());
     }
 
-    @Override
-    public Payment findById(UUID paymentId) {
-        return paymentRepository.findById(paymentId).orElse(null);
-    }
-
     private Payment findOrThrow(UUID id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", id));

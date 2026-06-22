@@ -1,5 +1,6 @@
 package org.example.healthcare.controller;
 
+import com.stripe.exception.EventDataObjectDeserializationException;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.*;
 import com.stripe.net.Webhook;
@@ -147,8 +148,7 @@ public class StripeWebhookController {
 
     /** payment_intent.succeeded → RESERVED → HELD; persist charge_id. */
     private void handlePaymentIntentSucceeded(Event event) {
-        PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No PI in event " + event.getId()));
+        PaymentIntent pi = (PaymentIntent) deserialize(event);
 
         paymentRepository.findByStripePaymentIntentId(pi.getId()).ifPresentOrElse(payment -> {
             if (payment.getStatus() != PaymentStatus.RESERVED) {
@@ -171,8 +171,7 @@ public class StripeWebhookController {
 
     /** payment_intent.payment_failed → RESERVED → FAILED. */
     private void handlePaymentIntentFailed(Event event) {
-        PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No PI in event " + event.getId()));
+        PaymentIntent pi = (PaymentIntent) deserialize(event);
 
         paymentRepository.findByStripePaymentIntentId(pi.getId()).ifPresentOrElse(payment -> {
             if (payment.getStatus() == PaymentStatus.RESERVED) {
@@ -187,8 +186,7 @@ public class StripeWebhookController {
 
     /** payment_intent.canceled → RESERVED → FAILED. */
     private void handlePaymentIntentCanceled(Event event) {
-        PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No PI in event " + event.getId()));
+        PaymentIntent pi = (PaymentIntent) deserialize(event);
 
         paymentRepository.findByStripePaymentIntentId(pi.getId()).ifPresentOrElse(payment -> {
             if (payment.getStatus() == PaymentStatus.RESERVED) {
@@ -201,8 +199,7 @@ public class StripeWebhookController {
 
     /** charge.refunded → update refundId; transition to REFUNDED if full refund. */
     private void handleChargeRefunded(Event event) {
-        Charge charge = (Charge) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No charge in event " + event.getId()));
+        Charge charge = (Charge) deserialize(event);
 
         paymentRepository.findByStripeChargeId(charge.getId()).ifPresentOrElse(payment -> {
             // Get the latest refund id from the charge's refunds list
@@ -235,8 +232,7 @@ public class StripeWebhookController {
 
     /** charge.dispute.created → transition to DISPUTED; halt any pending release. */
     private void handleDisputeCreated(Event event) {
-        com.stripe.model.Dispute dispute = (com.stripe.model.Dispute) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No dispute in event " + event.getId()));
+        com.stripe.model.Dispute dispute = (com.stripe.model.Dispute) deserialize(event);
 
         // Find payment by charge id
         String chargeId = dispute.getCharge();
@@ -254,8 +250,7 @@ public class StripeWebhookController {
 
     /** charge.dispute.closed → reconcile per outcome. */
     private void handleDisputeClosed(Event event) {
-        com.stripe.model.Dispute dispute = (com.stripe.model.Dispute) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No dispute in event " + event.getId()));
+        com.stripe.model.Dispute dispute = (com.stripe.model.Dispute) deserialize(event);
 
         paymentRepository.findByStripeChargeId(dispute.getCharge()).ifPresentOrElse(payment -> {
             String status = dispute.getStatus(); // "won", "lost", "warning_closed", etc.
@@ -282,8 +277,7 @@ public class StripeWebhookController {
 
     /** transfer.created → record transferId on the matching payment. */
     private void handleTransferCreated(Event event) {
-        Transfer transfer = (Transfer) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No transfer in event " + event.getId()));
+        Transfer transfer = (Transfer) deserialize(event);
 
         // The transfer group format is "booking_<bookingId>" — we find via sourceTransaction (charge id)
         String sourceTransaction = transfer.getSourceTransaction();
@@ -300,8 +294,7 @@ public class StripeWebhookController {
 
     /** transfer.reversed → log; reconciliation handled by dispute resolution flow. */
     private void handleTransferReversed(Event event) {
-        Transfer transfer = (Transfer) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No transfer in event " + event.getId()));
+        Transfer transfer = (Transfer) deserialize(event);
 
         paymentRepository.findByStripeTransferId(transfer.getId()).ifPresent(payment -> {
             auditLogService.log(null, "TRANSFER_REVERSED", "Payment", payment.getId(),
@@ -312,8 +305,7 @@ public class StripeWebhookController {
 
     /** account.updated → sync MedicStripeAccount flags. */
     private void handleAccountUpdated(Event event) {
-        Account account = (Account) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No account in event " + event.getId()));
+        Account account = (Account) deserialize(event);
 
         String requirementsJson = null;
         if (account.getRequirements() != null
@@ -332,28 +324,45 @@ public class StripeWebhookController {
 
     /** account.application.deauthorized → mark medic as offboarded. */
     private void handleAccountDeauthorized(Event event) {
-        Account account = (Account) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No account in event " + event.getId()));
+        Account account = (Account) deserialize(event);
         stripeConnectService.deauthorizeAccount(account.getId());
     }
 
     /** payout.paid → audit log for medic-facing payout history. */
     private void handlePayoutPaid(Event event) {
-        Payout payout = (Payout) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No payout in event " + event.getId()));
+        Payout payout = (Payout) deserialize(event);
         log.info("Payout {} ({} bani) arrived for account {}",
                 payout.getId(), payout.getAmount(), payout.getDestination());
     }
 
     /** payout.failed → audit log for medic-facing payout history. */
     private void handlePayoutFailed(Event event) {
-        Payout payout = (Payout) event.getDataObjectDeserializer()
-                .getObject().orElseThrow(() -> new IllegalStateException("No payout in event " + event.getId()));
+        Payout payout = (Payout) deserialize(event);
         log.warn("Payout {} FAILED for account {}: {}", payout.getId(), payout.getDestination(),
                 payout.getFailureMessage());
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
+
+    /**
+     * Deserializes the event's data object, tolerating a Stripe API-version mismatch
+     * between the live event and the pinned SDK.
+     *
+     * <p>The safe {@code getObject()} returns an empty {@link Optional} whenever the
+     * event's {@code api_version} differs from the SDK's expected version, which makes
+     * every handler throw. {@code deserializeUnsafe()} ignores the version gap and maps
+     * the raw JSON onto the SDK model anyway — safe here because the fields we read
+     * ({@code id}, {@code latest_charge}, {@code status}, refund/dispute/transfer ids)
+     * are stable across these versions.
+     */
+    private StripeObject deserialize(Event event) {
+        try {
+            return event.getDataObjectDeserializer().deserializeUnsafe();
+        } catch (EventDataObjectDeserializationException e) {
+            throw new IllegalStateException(
+                    "Failed to deserialize data object for event " + event.getId(), e);
+        }
+    }
 
     private void transitionTo(Payment payment, PaymentStatus expected, PaymentStatus to) {
         if (payment.getStatus() != expected) {

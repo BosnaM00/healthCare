@@ -6,7 +6,10 @@ import org.example.healthcare.dto.prescription.PrescriptionRequest;
 import org.example.healthcare.dto.prescription.PrescriptionResponse;
 import org.example.healthcare.security.AppUserDetails;
 import org.example.healthcare.service.PrescriptionService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,5 +50,17 @@ public class PrescriptionController {
     @GetMapping("/my")
     public List<PrescriptionResponse> getMyPrescriptions(@AuthenticationPrincipal AppUserDetails principal) {
         return prescriptionService.getForPatient(principal.getUserId());
+    }
+
+    /** AUTH (patient or treating medic) — download the prescription as a generated PDF */
+    @GetMapping("/{prescriptionId}/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable UUID prescriptionId,
+                                              @AuthenticationPrincipal AppUserDetails principal) {
+        byte[] pdf = prescriptionService.generatePdf(prescriptionId, principal.getUserId());
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"prescription-" + prescriptionId + ".pdf\"")
+                .body(pdf);
     }
 }
