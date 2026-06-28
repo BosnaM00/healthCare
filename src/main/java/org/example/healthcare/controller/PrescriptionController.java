@@ -2,14 +2,18 @@ package org.example.healthcare.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.healthcare.dto.diagnosis.DiagnosisInferenceRequest;
+import org.example.healthcare.dto.diagnosis.DiagnosisInferenceResponse;
 import org.example.healthcare.dto.prescription.PrescriptionRequest;
 import org.example.healthcare.dto.prescription.PrescriptionResponse;
 import org.example.healthcare.security.AppUserDetails;
+import org.example.healthcare.service.AiDiagnosisService;
 import org.example.healthcare.service.PrescriptionService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +33,19 @@ import java.util.UUID;
 public class PrescriptionController {
 
     private final PrescriptionService prescriptionService;
+    private final AiDiagnosisService aiDiagnosisService;
+
+    /**
+     * MEDIC — infer a likely diagnosis from a set of medications (AI decision-support).
+     *
+     * <p>Stateless: medications are supplied in the request body, nothing is read
+     * from or written to storage. The result is a non-binding suggestion.
+     */
+    @PostMapping("/infer-diagnosis")
+    @PreAuthorize("hasRole('MEDIC')")
+    public DiagnosisInferenceResponse inferDiagnosis(@Valid @RequestBody DiagnosisInferenceRequest request) {
+        return aiDiagnosisService.infer(request);
+    }
 
     /** MEDIC — create a prescription after consultation completes */
     @PostMapping("/consultation/{consultationId}")
